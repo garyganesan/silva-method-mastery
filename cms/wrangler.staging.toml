@@ -15,4 +15,4 @@ SITE_FILE    = "silva-method-mastery.html"
 [[d1_databases]]
 binding       = "DB"
 database_name = "smm-cms-staging-db"
-database_id   = "DB_ID_PLACEHOLDER"
+database_id   = "d001cdba-52fb-48e5-8699-f98230684250"
