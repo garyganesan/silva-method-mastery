@@ -1,0 +1,22 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+      branches:
+            - main
+
+            jobs:
+              deploy:
+                  runs-on: ubuntu-latest
+                      name: Deploy
+                          steps:
+                                - uses: actions/checkout@v4
+
+                                      - name: Deploy to Cloudflare Pages
+                                              uses: cloudflare/pages-action@v1
+                                                      with:
+                                                                apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                                                                          accountId: cb982ebf22ca559a53eade697c49462f
+                                                                                    projectName: silvamethodmastery
+                                                                                              directory: .
+                                                                                                        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
