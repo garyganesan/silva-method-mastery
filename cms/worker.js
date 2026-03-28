@@ -230,7 +230,7 @@ const CONTENT_SCHEMA = [
       { key: 'features.heading', label: 'Heading', type: 'text', hint: '' },
       { key: 'features.card1.title', label: 'Card 1 Title', type: 'text',     hint: '' },
       { key: 'features.card1.body',  label: 'Card 1 Body',  type: 'textarea', hint: '' },
-      { key: 'features.card2.title', label: 'Card 2 Title', type: 'text',     hint: %' },
+      { key: 'features.card2.title', label: 'Card 2 Title', type: 'text',     hint: '' },
       { key: 'features.card2.body',  label: 'Card 2 Body',  type: 'textarea', hint: '' },
       { key: 'features.card3.title', label: 'Card 3 Title', type: 'text',     hint: '' },
       { key: 'features.card3.body',  label: 'Card 3 Body',  type: 'textarea', hint: '' },
