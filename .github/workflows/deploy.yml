@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
   deploy:
@@ -15,11 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set Cloudflare project name
+        id: project
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "name=silvamethodmastery" >> $GITHUB_OUTPUT
+          else
+            echo "name=silvamethodmastery-staging" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: cb982ebf22ca559a53eade697c49462f
-          projectName: silvamethodmastery
+          projectName: ${{ steps.project.outputs.name }}
           directory: .
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
