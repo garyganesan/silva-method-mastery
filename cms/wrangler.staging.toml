@@ -10,7 +10,7 @@ ADMIN_EMAIL  = "gary.gan3san@gmail.com"
 SITE_BRANCH  = "staging"
 GITHUB_OWNER = "garyganesan"
 GITHUB_REPO  = "silva-method-mastery"
-SITE_FILE    = "silva-method-mastery.html"
+SITE_FILE    = "index.html"
 
 [[d1_databases]]
 binding       = "DB"
