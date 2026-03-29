@@ -732,6 +732,36 @@ async function handleGmailCallback(request, env) {
 
 // ─── Main Entry Point ────────────────────────────────────────────────────────
 
+async function handleSetupBranch(request, env) {
+  if (!env.GITHUB_TOKEN) return json({ ok: false, error: 'GITHUB_TOKEN not configured' }, 400);
+  try {
+    const { from = 'staging', to = 'main' } = await request.json();
+    if (!['staging', 'main'].includes(from) || !['staging', 'main'].includes(to)) {
+      return json({ ok: false, error: 'Invalid branch names' }, 400);
+    }
+    // Fetch template HTML from source branch
+    const srcData = await getGitHubFile(env, from);
+    if (!srcData) return json({ ok: false, error: 'Could not fetch HTML from ' + from }, 500);
+    let templateHTML = decodeURIComponent(escape(atob(srcData.content.replace(/\n/g, ''))));
+    // Inject current D1 content into the template
+    const rows = await env.DB.prepare('SELECT content_key, value FROM content WHERE page = ?').bind('main').all();
+    const contentMap = {};
+    for (const row of rows.results) contentMap[row.content_key] = row.value;
+    templateHTML = injectCMSContent(templateHTML, contentMap);
+    // Get the target branch's current file SHA (needed for commit)
+    const destData = await getGitHubFile(env, to);
+    if (!destData) return json({ ok: false, error: 'Could not fetch current file from ' + to }, 500);
+    const result = await commitGitHubFile(
+      env, to, templateHTML, destData.sha,
+      'CMS: Initialise ' + to + ' branch with content markers [' + new Date().toISOString() + ']'
+    );
+    if (!result) return json({ ok: false, error: 'Failed to commit to ' + to }, 500);
+    return json({ ok: true, message: 'Branch ' + to + ' initialised from ' + from });
+  } catch (e) {
+    return json({ ok: false, error: 'Setup failed: ' + e.message }, 500);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url    = new URL(request.url);
@@ -774,6 +804,7 @@ export default {
     if (path === '/api/content' && method === 'GET')  return handleGetContent(request, env);
     if (path === '/api/content' && method === 'POST') return handleSaveContent(request, env);
     if (path === '/api/publish' && method === 'POST') return handlePublish(request, env);
+    if (path === '/api/setup-branch' && method === 'POST') return handleSetupBranch(request, env);
     if (path === '/setup/gmail' && method === 'GET')  return handleGmailSetup(request, env);
     if (path === '/setup/gmail/callback' && method === 'GET') return handleGmailCallback(request, env);
 
