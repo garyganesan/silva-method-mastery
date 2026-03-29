@@ -40,10 +40,10 @@ function generateToken(len = 48) {
   return t;
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json', ...extra }
   });
 }
 
