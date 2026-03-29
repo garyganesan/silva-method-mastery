@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT  = "staging"
-ADMIN_EMAIL  = "ganesan.kanavathy@gmail.com"
+ADMIN_EMAIL  = "gary.gan3san@gmail.com"
 SITE_BRANCH  = "staging"
 GITHUB_OWNER = "garyganesan"
 GITHUB_REPO  = "silva-method-mastery"
