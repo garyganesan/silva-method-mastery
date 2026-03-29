@@ -23,6 +23,7 @@
 
 const OTP_EXPIRY_MINS   = 10;
 const SESSION_EXPIRY_HRS = 24;
+const BASE_PATH = '/cms'; // URL prefix for all CMS routes
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -311,7 +312,7 @@ const COMMON_CSS = `
   .badge-green{background:rgba(46,204,113,.15);color:var(--success)}
 `;
 
-function loginPage(msg = '') {
+function loginPage(msg = '', base = '') {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Login — Silva Method Mastery CMS</title>
@@ -336,7 +337,7 @@ function loginPage(msg = '') {
     <div id="step1">
       <div class="field">
         <label>Email Address</label>
-        <input type="email" id="email" placeholder="your@email.com" value="ganesan.kanavathy@gmail.com">
+        <input type="email" id="email" placeholder="your@email.com">
       </div>
       <button class="btn btn-gold" style="width:100%" onclick="sendOTP()">Send One-Time Password &rarr;</button>
     </div>
@@ -360,7 +361,7 @@ async function sendOTP(){
   if(!email)return alert('Please enter your email');
   document.getElementById('step1').style.display='none';
   document.getElementById('loading').style.display='block';
-  const r=await fetch('/auth/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+  const r=await fetch(_B+'/auth/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
   const d=await r.json();
   document.getElementById('loading').style.display='none';
   if(d.ok){
@@ -377,9 +378,9 @@ async function verifyOTP(){
   const email=document.getElementById('email').value.trim();
   const otp=document.getElementById('otp').value.trim();
   if(otp.length!==6)return alert('Please enter the 6-digit code');
-  const r=await fetch('/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,otp})});
+  const r=await fetch(_B+'/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,otp})});
   const d=await r.json();
-  if(d.ok){window.location.href='/dashboard';}
+  if(d.ok){window.location.href=_B+'/dashboard';}
   else{alert(d.error||'Invalid or expired OTP. Please try again.');}
 }
 function goBack(){
@@ -391,12 +392,12 @@ document.addEventListener('keyup',e=>{if(e.key==='Enter'&&document.getElementByI
 </script></body></html>`;
 }
 
-function dashboardPage(session, content, isGmailConfigured, isGitHubConfigured) {
+function dashboardPage(session, content, isGmailConfigured, isGitHubConfigured, base = '') {
   const contentMap = {};
   for (const row of content) contentMap[row.content_key] = row.value;
 
   const gmailWarning = !isGmailConfigured
-    ? `<div class="msg msg-warn">&#9888; Gmail not connected — OTPs are logged to Cloudflare Workers console (dev mode). <a href="/setup/gmail">Connect Gmail &rarr;</a></div>`
+    ? `<div class="msg msg-warn">&#9888; Gmail not connected — OTPs are logged to Cloudflare Workers console (dev mode). <a href="${base}/setup/gmail">Connect Gmail &rarr;</a></div>`
     : '';
   const gitWarning = !isGitHubConfigured
     ? `<div class="msg msg-warn">&#9888; GitHub token not configured — Publish to website will not work until GITHUB_TOKEN secret is set.</div>`
@@ -459,8 +460,8 @@ function dashboardPage(session, content, isGmailConfigured, isGitHubConfigured) 
         `<a class="nav-item" onclick="scrollTo('section_${s.section.replace(/[^a-z0-9]/gi,'_')}')">${s.section}</a>`
       ).join('')}
       <div class="nav-label" style="margin-top:12px">System</div>
-      <a class="nav-item" href="/setup/gmail">Gmail Setup</a>
-      <a class="nav-item" href="/logout">Logout</a>
+      <a class="nav-item" href="${base}/setup/gmail">Gmail Setup</a>
+      <a class="nav-item" href="${base}/logout">Logout</a>
     </nav>
   </aside>
   <main class="main">
@@ -481,6 +482,7 @@ function dashboardPage(session, content, isGmailConfigured, isGitHubConfigured) 
   </main>
 </div>
 <script>
+const _B='${base}';
 function scrollTo(id){
   const el=document.getElementById(id);
   if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
@@ -493,7 +495,7 @@ function getContentMap(){
 async function saveAll(){
   const map=getContentMap();
   document.getElementById('save-status').textContent='Saving\u2026';
-  const r=await fetch('/api/content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:'main',content:map})});
+  const r=await fetch(_B+'/api/content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:'main',content:map})});
   const d=await r.json();
   document.getElementById('save-status').textContent=d.ok?'\u2713 Saved':'Failed to save';
   showFlash(d.ok?'success':'error',d.ok?'Draft saved successfully.':d.error||'Save failed.');
@@ -504,7 +506,7 @@ async function publishSite(branch){
   if(!confirm('Publish to '+label+'? This will update the live '+label+' website.'))return;
   document.getElementById('save-status').textContent='Publishing\u2026';
   await saveAll();
-  const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({branch})});
+  const r=await fetch(_B+'/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({branch})});
   const d=await r.json();
   document.getElementById('save-status').textContent='';
   showFlash(d.ok?'success':'error',d.ok?'Published to '+label+'! Site will update in ~1 minute.':d.error||'Publish failed.');
@@ -523,7 +525,7 @@ document.querySelectorAll('[data-key]').forEach(el=>{
 </script></body></html>`;
 }
 
-function gmailSetupPage(env, isConfigured, callbackUrl) {
+function gmailSetupPage(env, isConfigured, callbackUrl, base = '') {
   const authUrl = isConfigured ? '' : `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
     client_id:     env.GOOGLE_CLIENT_ID || 'NOT_CONFIGURED',
     redirect_uri:  callbackUrl,
@@ -542,7 +544,7 @@ function gmailSetupPage(env, isConfigured, callbackUrl) {
   p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px}
 </style></head><body>
 <div class="wrap">
-  <div style="margin-bottom:24px"><a href="/dashboard">&larr; Back to Dashboard</a></div>
+  <div style="margin-bottom:24px"><a href="${base}/dashboard">&larr; Back to Dashboard</a></div>
   <h1>Gmail OAuth2 Setup</h1>
   ${isConfigured
     ? '<div class="msg msg-success">&#10003; Gmail is connected. OTPs will be sent from your Gmail account.</div>'
@@ -692,15 +694,15 @@ async function handlePublish(request, env) {
 
 async function handleGmailSetup(request, env) {
   const url         = new URL(request.url);
-  const callbackUrl = `${url.origin}/setup/gmail/callback`;
+  const callbackUrl = `${url.origin}/cms/setup/gmail/callback`;
   const row         = await env.DB.prepare('SELECT id FROM gmail_oauth WHERE id = 1').first();
-  return html(gmailSetupPage(env, !!row, callbackUrl));
+  return html(gmailSetupPage(env, !!row, callbackUrl, BASE_PATH));
 }
 
 async function handleGmailCallback(request, env) {
   const url  = new URL(request.url);
   const code = url.searchParams.get('code');
-  if (!code) return html('<p>Error: No code returned. <a href="/setup/gmail">Try again</a></p>', 400);
+  if (!code) return html('<p>Error: No code returned. <a href="/cms/setup/gmail">Try again</a></p>', 400);
 
   const callbackUrl = `${url.origin}/setup/gmail/callback`;
   const resp = await fetch('https://oauth2.googleapis.com/token', {
@@ -724,7 +726,7 @@ async function handleGmailCallback(request, env) {
     'INSERT INTO gmail_oauth (id, refresh_token, access_token, token_expiry) VALUES (1, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET refresh_token=excluded.refresh_token, access_token=excluded.access_token, token_expiry=excluded.token_expiry'
   ).bind(data.refresh_token, data.access_token || null, expiry).run();
 
-  return redirect('/setup/gmail');
+  return redirect(BASE_PATH + '/setup/gmail');
 }
 
 // ─── Main Entry Point ────────────────────────────────────────────────────────
@@ -732,12 +734,16 @@ async function handleGmailCallback(request, env) {
 export default {
   async fetch(request, env) {
     const url    = new URL(request.url);
-    const path   = url.pathname;
     const method = request.method;
 
+    // Strip BASE_PATH prefix so internal route matching stays the same
+    let path = url.pathname;
+    if (BASE_PATH && path.startsWith(BASE_PATH)) {
+      path = path.slice(BASE_PATH.length) || '/';
+    }
+
     // Public routes
-    if (path === '/' && method === 'GET')
-      return html(loginPage());
+    if (path === '/' && method === 'GET') return html(loginPage('', BASE_PATH));
 
     if (path === '/auth/send-otp' && method === 'POST')
       return handleSendOTP(request, env);
@@ -750,18 +756,18 @@ export default {
       if (session) {
         await env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(session.token).run();
       }
-      return redirect('/', { 'Set-Cookie': 'smm_session=; Path=/; Max-Age=0' });
+      return redirect(BASE_PATH, { 'Set-Cookie': 'smm_session=; Path=/; Max-Age=0' });
     }
 
     // Auth-required routes
     const session = await getSession(request, env);
-    if (!session) return redirect('/');
+    if (!session) return redirect(BASE_PATH);
 
     if (path === '/dashboard' && method === 'GET') {
       const rows    = await env.DB.prepare('SELECT * FROM content WHERE page = ?').bind('main').all();
       const gmailOk = !!(await env.DB.prepare('SELECT id FROM gmail_oauth WHERE id = 1').first());
       const gitOk   = !!env.GITHUB_TOKEN;
-      return html(dashboardPage(session, rows.results, gmailOk, gitOk));
+      return html(dashboardPage(session, rows.results, gmailOk, gitOk, BASE_PATH));
     }
 
     if (path === '/api/content' && method === 'GET')  return handleGetContent(request, env);
