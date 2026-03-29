@@ -356,6 +356,7 @@ function loginPage(msg = '', base = '') {
   <p class="footer-note">Secure OTP login &bull; Access restricted to authorised accounts</p>
 </div></div>
 <script>
+const _B='${base}';
 async function sendOTP(){
   const email=document.getElementById('email').value.trim();
   if(!email)return alert('Please enter your email');
